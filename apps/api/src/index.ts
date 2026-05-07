@@ -1,34 +1,31 @@
-import { fromNodeHeaders, toNodeHandler } from "better-auth/node";
-
+import { toNodeHandler } from "better-auth/node";
 import cors from "cors";
 import express from "express";
+import { projectRouter } from "./features/projects/projects.routes";
 import { auth } from "./lib/auth";
 
 const app = express();
-const port = 3005;
+const port = process.env.PORT;
 
 // Configure CORS middleware
-app.use(
-	cors({
-		origin: "http://localhost:5173/", // Replace with your frontend's origin
-		methods: ["GET", "POST", "PUT", "DELETE"], // Specify allowed HTTP methods
-		credentials: true, // Allow credentials (cookies, authorization headers, etc.)
-	}),
-);
+const corsOptions = {
+	origin: process.env.FRONTEND_URL,
+	methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
+	credentials: true,
+};
+app.use(cors(corsOptions));
 
 app.all("/api/auth/*splat", toNodeHandler(auth));
 
-app.get("/api/me", async (req, res) => {
-	const session = await auth.api.getSession({
-		headers: fromNodeHeaders(req.headers),
-	});
-	return res.json(session);
-});
-
 // Mount express json middleware after Better Auth handler
-// or only apply it to routes that don't interact with Better Auth
 app.use(express.json());
 
+// endpoints
+app.post("/projects", projectRouter);
+// app.get("/api/me", requireAuth, async (req, res) => {
+// 	return res.json({ user: req.session.user });
+// });
+
 app.listen(port, () => {
-	console.log(`Example app listening on port ${port}`);
+	console.log(`REST API : http://localhost:${port}`);
 });

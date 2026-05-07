@@ -1,0 +1,21 @@
+erDiagram
+    USERS ||--o{ PROJECTS: "have"
+    PROJECTS ||--o{ TASKS:"have"
+    USERS {
+        string id PK
+        string name
+        string email
+    }
+    PROJECTS {
+        string id PK
+        string name
+        string description
+        string user_id FK
+    }
+    TASKS {
+        string id
+        string name
+        string status
+        string project_id FK
+    }
+        

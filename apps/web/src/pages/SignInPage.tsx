@@ -1,5 +1,5 @@
 import { RiStackLine } from "@remixicon/react";
-import { SignInForm } from "@/features/auth/components/SingInForm";
+import { SignInForm } from "@/features/auth/components/SignInForm";
 
 export default function SignInPage() {
 	return (

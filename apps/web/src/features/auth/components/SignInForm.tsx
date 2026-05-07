@@ -1,9 +1,9 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useState } from "react";
 import { Controller, useForm } from "react-hook-form";
-import { Link, useNavigate } from "react-router";
+import { Link, useNavigate, useSearchParams } from "react-router";
 import { z } from "zod";
-import { signUp } from "@/lib/auth-client";
+import { signIn } from "@/lib/auth-client";
 import { Button } from "@/shared/components/ui/button";
 import {
 	Field,
@@ -17,61 +17,48 @@ import { Input } from "@/shared/components/ui/input";
 import { Spinner } from "@/shared/components/ui/spinner";
 import { cn } from "@/shared/lib/utils";
 
-const formSchema = z
-	.object({
-		fullName: z
-			.string({
-				error: (issue) =>
-					issue.input === undefined
-						? "The name is required."
-						: "The field should be text.",
-			})
-			.min(2, { message: "The name should be at least 2 characters." }),
-		email: z.email({
+const formSchema = z.object({
+	email: z.email({
+		error: (issue) =>
+			issue === undefined
+				? "The email is required."
+				: "The field should be a valid email.",
+	}),
+	password: z
+		.string({
 			error: (issue) =>
-				issue === undefined
-					? "The email is required."
-					: "The field should be a valid email.",
-		}),
-		password: z
-			.string({
-				error: (issue) =>
-					issue === undefined ? "The password is required." : "",
-			})
-			.min(8, { message: "The password should be at least 8 characters." }),
-		confirmPassword: z.string(),
-	})
-	.refine((data) => data.password === data.confirmPassword, {
-		message: "The passwords do not match",
-		path: ["confirmPassword"],
-	});
+				issue === undefined ? "The password is required." : "",
+		})
+		.min(8, { message: "The password should be at least 8 characters." }),
+});
 
 type FormData = z.infer<typeof formSchema>;
 
-export function SignUpForm({
+export function SignInForm({
 	className,
 	...props
 }: React.ComponentProps<"form">) {
-	const navigate = useNavigate();
 	const [isLoading, setLoading] = useState(false);
 	const [error, setError] = useState<null | string>(null);
+	// navigation
+	const [searchParams] = useSearchParams();
+	const navigate = useNavigate();
+	const next = searchParams.get("next") ?? "/dashboard";
+
 	const form = useForm<FormData>({
 		resolver: zodResolver(formSchema),
 		defaultValues: {
-			fullName: "",
-			email: "",
-			password: "",
-			confirmPassword: "",
+			email: "davidmariolc.dev@gmail.com",
+			password: "12345678",
 		},
 	});
 
 	async function onSubmit(data: FormData) {
-		const { fullName, email, password } = data;
-		await signUp.email(
+		const { email, password } = data;
+		await signIn.email(
 			{
 				email: email,
 				password: password,
-				name: fullName,
 			},
 			{
 				onRequest: () => {
@@ -81,7 +68,7 @@ export function SignUpForm({
 
 				onSuccess: () => {
 					setLoading(false);
-					navigate("/dashboard", { replace: true });
+					navigate(next, { replace: true });
 				},
 				onError: (ctx) => {
 					setLoading(false);
@@ -90,7 +77,6 @@ export function SignUpForm({
 			},
 		);
 	}
-
 	return (
 		<form
 			onSubmit={form.handleSubmit(onSubmit)}
@@ -99,29 +85,11 @@ export function SignUpForm({
 		>
 			<FieldGroup>
 				<div className="flex flex-col items-center gap-1 text-center">
-					<h1 className="text-2xl font-bold">Create your account</h1>
+					<h1 className="text-2xl font-bold">Login to your account</h1>
 					<p className="text-sm text-balance text-muted-foreground">
-						Fill in the form below to create your account
+						Enter your email below to login to your account
 					</p>
 				</div>
-				<Controller
-					name="fullName"
-					control={form.control}
-					render={({ field, fieldState }) => (
-						<Field data-invalid={fieldState.invalid}>
-							<FieldLabel htmlFor="form-rhf-fullname">Full Name</FieldLabel>
-							<Input
-								{...field}
-								id="form-rhf-fullname"
-								aria-invalid={fieldState.invalid}
-								placeholder="John Doe"
-								autoComplete="off"
-								required={true}
-							/>
-							{fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-						</Field>
-					)}
-				/>
 				<Controller
 					name="email"
 					control={form.control}
@@ -145,7 +113,15 @@ export function SignUpForm({
 					control={form.control}
 					render={({ field, fieldState }) => (
 						<Field data-invalid={fieldState.invalid}>
-							<FieldLabel htmlFor="form-rhf-password">Password</FieldLabel>
+							<div className="flex justify-between">
+								<FieldLabel htmlFor="form-rhf-password">Password</FieldLabel>
+								<a
+									href="#link"
+									className="ml-auto text-sm underline-offset-4 hover:underline"
+								>
+									Forgot your password?
+								</a>
+							</div>
 							<Input
 								{...field}
 								type="password"
@@ -159,39 +135,16 @@ export function SignUpForm({
 						</Field>
 					)}
 				/>
-				<Controller
-					name="confirmPassword"
-					control={form.control}
-					render={({ field, fieldState }) => (
-						<Field data-invalid={fieldState.invalid}>
-							<FieldLabel htmlFor="form-rhf-confirmPassword">
-								Confirm Password
-							</FieldLabel>
-							<Input
-								{...field}
-								type="password"
-								id="form-rhf-confirmPassword"
-								aria-invalid={fieldState.invalid}
-								placeholder="●●●●●●●●●●●"
-								autoComplete="off"
-								required={true}
-							/>
-							{fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-						</Field>
-					)}
-				/>
 				{error && <p style={{ color: "red" }}>{error}</p>}
 				<Field>
 					{isLoading ? (
-						<Button type="submit" disabled>
-							<Spinner data-icon="inline-start" />
-							Create Account
+						<Button type="submit" disabled={isLoading}>
+							<Spinner data-icon="inline-start" /> Login
 						</Button>
 					) : (
-						<Button type="submit">Create Account</Button>
+						<Button type="submit">Login</Button>
 					)}
 				</Field>
-
 				<FieldSeparator>Or continue with</FieldSeparator>
 				<Field>
 					<Button variant="outline" type="button">
@@ -205,10 +158,13 @@ export function SignUpForm({
 								fill="currentColor"
 							/>
 						</svg>
-						Sign up with GitHub
+						Login with GitHub
 					</Button>
-					<FieldDescription className="px-6 text-center">
-						Already have an account? <Link to="/">Sign in</Link>
+					<FieldDescription className="text-center">
+						Don&apos;t have an account?{" "}
+						<Link to="/signup" className="underline underline-offset-4">
+							Sign up
+						</Link>
 					</FieldDescription>
 				</Field>
 			</FieldGroup>
